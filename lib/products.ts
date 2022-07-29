@@ -14,5 +14,13 @@ export const products = [
     unitName: 'basket',
     priceSol: 0.1,
     priceUsd: 10,
+  },
+  {
+    id: 'bucket-of-cookies',
+    name: 'Bucket',
+    description: 'A very large bucket of handsome cookies',
+    unitName: 'bucket',
+    priceSol: 0.5,
+    priceUsd: 50,
   }
 ]

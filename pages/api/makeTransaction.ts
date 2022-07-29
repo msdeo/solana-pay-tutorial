@@ -1,7 +1,8 @@
+import { createTransferCheckedInstruction, getAssociatedTokenAddress, getMint } from "@solana/spl-token"
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base"
 import { clusterApiUrl, Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js"
 import { NextApiRequest, NextApiResponse } from "next"
-import { shopAddress } from "../../lib/addresses"
+import { shopAddress, usdcAddress } from "../../lib/addresses"
 import calculatePrice from "../../lib/calculatePrice"
 
 export type MakeTransactionInputData = {
@@ -49,6 +50,12 @@ export default async function handler(
     const endpoint = clusterApiUrl(network)
     const connection = new Connection(endpoint)
 
+    const usdcMint = await getMint(connection, usdcAddress)
+    const buyerUsdcAddress = await getAssociatedTokenAddress(usdcAddress, buyerPublicKey)
+    const shopUsdcAddress  = await getAssociatedTokenAddress(usdcAddress, shopPublicKey)
+
+
+
     // Get a recent blockhash to include in the transaction
     const { blockhash } = await (connection.getLatestBlockhash('finalized'))
 
@@ -59,11 +66,21 @@ export default async function handler(
     })
 
     // Create the instruction to send SOL from the buyer to the shop
-    const transferInstruction = SystemProgram.transfer({
-      fromPubkey: buyerPublicKey,
-      lamports: amount.multipliedBy(LAMPORTS_PER_SOL).toNumber(),
-      toPubkey: shopPublicKey,
-    })
+    // const transferInstruction = SystemProgram.transfer({
+    //   fromPubkey: buyerPublicKey,
+    //   lamports: amount.multipliedBy(LAMPORTS_PER_SOL).toNumber(),
+    //   toPubkey: shopPublicKey,
+    // })
+
+    // Usdc transfer instruction
+    const transferInstruction = createTransferCheckedInstruction(
+      buyerUsdcAddress,
+      usdcAddress,
+      shopUsdcAddress,
+      buyerPublicKey,
+      amount.toNumber()*(10** (await usdcMint).decimals),
+      usdcMint.decimals,
+    )
 
     // Add the reference to the instruction as a key
     // This will mean this transaction is returned when we query for the reference
